@@ -3,10 +3,8 @@ import discord
 from discord import app_commands
 import requests
 
-# Renderの環境変数（Environment Variables）から値を読み込む
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-# サーバーIDは数値(int)にする必要があるため変換
 TARGET_GUILD_ID = int(os.getenv("TARGET_GUILD_ID", "0"))
 
 class MyBot(discord.Client):
@@ -28,7 +26,6 @@ async def on_ready():
 @bot.event
 async def on_member_join(member: discord.Member):
     if not WEBHOOK_URL or not TARGET_GUILD_ID:
-        print("エラー: 環境変数が正しく設定されていません。")
         return
 
     target_guild = bot.get_guild(TARGET_GUILD_ID)
@@ -57,7 +54,8 @@ async def check_common_members(interaction: discord.Interaction):
         if member.bot:
             continue
         if target_guild.get_member(member.id) is not None:
-            common_members.append(f"{member.mention} ({member.name})")
+            # メンション - `ID(数字)` (ユーザー名) の形式に変更
+            common_members.append(f"{member.mention} - `{member.id}` ({member.name})")
 
     embed = discord.Embed(
         title="🔍 共通サーバー所属メンバー一覧",
