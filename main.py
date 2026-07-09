@@ -2,6 +2,25 @@ import os
 import discord
 from discord import app_commands
 import requests
+from flask import Flask
+from threading import Thread
+
+# --- Renderのポートエラー対策用のダミーサーバー ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    # Renderは自動的にPORT環境変数を割り当てるので、それを読み込む
+    port = int(os.getenv("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
+# ------------------------------------------------
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -54,7 +73,6 @@ async def check_common_members(interaction: discord.Interaction):
         if member.bot:
             continue
         if target_guild.get_member(member.id) is not None:
-            # メンション - `ID(数字)` (ユーザー名) の形式に変更
             common_members.append(f"{member.mention} - `{member.id}` ({member.name})")
 
     embed = discord.Embed(
@@ -77,4 +95,6 @@ if __name__ == "__main__":
     if not TOKEN:
         print("エラー: DISCORD_BOT_TOKEN が環境変数に設定されていません。")
     else:
+        # ボット起動前にWebサーバーを裏で動かす
+        keep_alive()
         bot.run(TOKEN)
