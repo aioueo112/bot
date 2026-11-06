@@ -31,9 +31,11 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 last_played = {}
-TARGET_WORD = "鬼田敬一郎"
+last_result = {} # ユーザーごとの前回のルーレット結果を記憶する辞書
 
-# 認証ロールのID
+# 使える文字のプール（重複ありで選べる文字）
+CHARACTER_POOL = ["鬼", "田", "敬", "一", "郎"]
+TARGET_WORD = "鬼田敬一郎"
 VERIFY_ROLE_ID = 1568118976779915356
 
 class RouletteView(discord.ui.View):
@@ -52,11 +54,16 @@ class RouletteView(discord.ui.View):
             )
             return
 
-        char_list = list(TARGET_WORD)
-        random.shuffle(char_list)
-        result_word = "".join(char_list)
+        # 同じ文字が重複することも含めて、5文字をランダムに生成する
+        while True:
+            result_word = "".join(random.choices(CHARACTER_POOL, k=5))
+            # 前回と同じ結果でなければループを抜ける（ただし、まだ前回の記録がない、または大当りの場合はそのまま通す）
+            if user_id not in last_result or result_word != last_result[user_id] or result_word == TARGET_WORD:
+                break
 
+        # 今回の結果を保存
         last_played[user_id] = today
+        last_result[user_id] = result_word
 
         if result_word == TARGET_WORD:
             await interaction.response.send_message(
@@ -90,7 +97,6 @@ class VerifyView(discord.ui.View):
             return
 
         try:
-            # ユーザーにロールを付与
             await interaction.user.add_roles(role)
             await interaction.response.send_message("認証が完了しました！ロールが付与されました。", ephemeral=True)
         except discord.Forbidden:
